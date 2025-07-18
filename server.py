@@ -3,32 +3,48 @@ import requests
 import uuid
 import os
 import subprocess
+import sys
 
 app = Flask(__name__)
 
 @app.route("/merge", methods=["POST"])
 def merge_video():
-    data = request.get_json()
-    audio_url = data.get("audio_url")
-    image_url = data.get("image_url")
-
-    if not audio_url or not image_url:
-        return jsonify({"error": "Missing audio_url or image_url"}), 400
-
     try:
+        data = request.get_json()
+        audio_url = data.get("audio_url")
+        image_url = data.get("image_url")
+
+        if not audio_url or not image_url:
+            return jsonify({"error": "Missing audio_url or image_url"}), 400
+
         uid = uuid.uuid4().hex
         audio_path = f"/tmp/audio_{uid}.mp3"
         image_path = f"/tmp/image_{uid}.jpg"
         output_path = f"/tmp/output_{uid}.mp4"
 
-        with open(audio_path, "wb") as f:
-            f.write(requests.get(audio_url).content)
+        print(f"[*] Downloading audio from: {audio_url}")
+        sys.stdout.flush()
+        with requests.get(audio_url, stream=True) as r:
+            r.raise_for_status()
+            with open(audio_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        print(f"[*] Audio downloaded to: {audio_path}")
+        sys.stdout.flush()
 
-        with open(image_path, "wb") as f:
-            f.write(requests.get(image_url).content)
+        print(f"[*] Downloading image from: {image_url}")
+        sys.stdout.flush()
+        with requests.get(image_url, stream=True) as r:
+            r.raise_for_status()
+            with open(image_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        print(f"[*] Image downloaded to: {image_path}")
+        sys.stdout.flush()
 
         command = [
             "ffmpeg",
+            "-y",
             "-loop", "1",
             "-i", image_path,
             "-i", audio_path,
@@ -40,11 +56,56 @@ def merge_video():
             "-pix_fmt", "yuv420p",
             output_path
         ]
-        subprocess.run(command, check=True)
+        
+        print(f"[*] Executing FFmpeg command: {' '.join(command)}")
+        sys.stdout.flush()
 
-        return send_file(output_path, mimetype="video/mp4")
+        process = subprocess.run(command, capture_output=True, text=True, check=False)
+        
+        print(f"[*] FFmpeg stdout:\n{process.stdout}")
+        print(f"[*] FFmpeg stderr:\n{process.stderr}")
+        print(f"[*] FFmpeg exit code: {process.returncode}")
+        sys.stdout.flush()
 
+        if process.returncode != 0:
+            raise Exception(f"FFmpeg failed with exit code {process.returncode}. Stderr: {process.stderr}")
+
+        if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+            raise Exception(f"FFmpeg did not create a valid output file. Path: {output_path}, Size: {os.path.getsize(output_path)}. FFmpeg Stderr: {process.stderr}")
+
+        print(f"[*] Video merged successfully to: {output_path}")
+        sys.stdout.flush()
+
+        response = send_file(output_path, mimetype="video/mp4")
+        
+        @response.call_on_close
+        def cleanup_output_file():
+            if os.path.exists(output_path):
+                os.remove(output_path)
+                print(f"[*] Cleaned up temporary output video file: {output_path}")
+                sys.stdout.flush()
+        
+        # Clean up input files after starting the response
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+            print(f"[*] Cleaned up temporary audio file: {audio_path}")
+            sys.stdout.flush()
+        if os.path.exists(image_path):
+            os.remove(image_path)
+            print(f"[*] Cleaned up temporary image file: {image_path}")
+            sys.stdout.flush()
+
+        return response
+
+    except requests.exceptions.RequestException as e:
+        print(f"[!] Error downloading audio or image: {e}")
+        if e.response is not None:
+            print(f"[!] Response status: {e.response.status_code}")
+            print(f"[!] Response body: {e.response.text}")
+        return jsonify({"error": f"Failed to download input files: {e}"}), 500
     except Exception as e:
+        print(f"[!] An error occurred during video merging: {e}")
+        sys.stdout.flush()
         return jsonify({"error": str(e)}), 500
 
 @app.route("/")
