@@ -7,7 +7,7 @@ binding = "GLOSSARY_TERMS"
 id = "1155bab917014549985e60328bf96d98"
 
 [[kv_namespaces]]
-binding = "TOKENS_KV"
+binding = "USAGE_STATS"
 id = "934bb8a4d59f462d9f1bb888ace4f894"
 
 [[kv_namespaces]]

@@ -68,37 +68,37 @@ export default {
 <body>
    <div class="container">
        <div class="header">
-           <h1>🧠 API Glossaire Philosophique</h1>
-           <p>Accédez à notre base de définitions philosophiques</p>
+           <h1>🧠 Philosophy Glossary API</h1>
+           <p>Access high-quality philosophical definitions for AI training</p>
        </div>
        <div class="form-container">
            <form id="apiKeyForm">
                <div class="form-group">
-                   <label for="name">Nom / Entreprise *</label>
-                   <input type="text" id="name" required placeholder="Votre nom ou entreprise">
+                   <label for="name">Company / AI Platform *</label>
+                   <input type="text" id="name" required placeholder="OpenAI, Anthropic, Google AI...">
                </div>
                <div class="form-group">
-                   <label for="email">Email *</label>
-                   <input type="email" id="email" required placeholder="votre@email.com">
+                   <label for="email">Technical Contact Email *</label>
+                   <input type="email" id="email" required placeholder="api-team@company.com">
                </div>
                <div class="form-group">
-                   <label>Choisissez votre plan *</label>
+                   <label>Choose your plan *</label>
                    <div style="border: 2px solid #e5e7eb; border-radius: 8px;">
                        <div class="plan-option">
                            <input type="radio" name="plan" value="gratuit" id="plan-gratuit" checked>
                            <label for="plan-gratuit" style="margin: 0; cursor: pointer; display: inline;">
-                               <strong>Gratuit</strong> - 1 000 appels/jour - 0€
+                               <strong>Free</strong> - 1,000 calls/day - 0€
                            </label>
                        </div>
                        <div class="plan-option">
                            <input type="radio" name="plan" value="starter" id="plan-starter">
                            <label for="plan-starter" style="margin: 0; cursor: pointer; display: inline;">
-                               <strong>Starter</strong> - 20 000 appels/jour - 0,50€/1000
+                               <strong>Starter</strong> - 20,000 calls/day - $0.50/1000 calls
                            </label>
                        </div>
                    </div>
                </div>
-               <button type="submit" class="btn">Obtenir ma clé API</button>
+               <button type="submit" class="btn">Get API Key</button>
            </form>
            <div id="result" style="margin-top: 1rem; display: none; padding: 1rem; border-radius: 8px;"></div>
        </div>
@@ -122,7 +122,7 @@ export default {
            const resultDiv = document.getElementById('result');
            
            if (response.ok) {
-               resultDiv.innerHTML = '<h3>✅ Succès</h3><p>Votre clé API a été générée. Veuillez vérifier votre email.</p>';
+               resultDiv.innerHTML = '<h3>✅ Success</h3><p>Your API key has been generated. Please check your email.</p>';
                resultDiv.style.background = '#ecfdf5';
                resultDiv.style.color = '#065f46';
            } else {
@@ -152,10 +152,7 @@ export default {
           return authResult;
         }
 
-        const rateLimitResponse = await applyRateLimiting(request, env, authResult, corsHeaders);
-        if (rateLimitResponse) {
-          return rateLimitResponse;
-        }
+        
       }
 
       // Route pour créer une intention de paiement Stripe
@@ -272,8 +269,6 @@ async function handleRegister(request, env, corsHeaders) {
       quota_daily: config.quota,
       price_per_1000: config.price,
       created_at: new Date().toISOString(),
-      usage_today: 0,
-      last_reset: new Date().toISOString().split('T')[0],
       active: true,
     };
 
@@ -301,63 +296,93 @@ async function handleRegister(request, env, corsHeaders) {
   }
 }
 
-// 🔒 FONCTION: Authentification par clé API
+//  FONCTION: Authentification par clé API + Comptage usage
 async function authenticateRequest(request, env, corsHeaders) {
-  const apiKey = request.headers.get('X-API-Key');
+  const apiKey = request.headers.get("X-API-Key");
   if (!apiKey) {
     return new Response(JSON.stringify({ error: "Clé API manquante. Veuillez fournir l'en-tête 'X-API-Key'." }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      headers: { "Content-Type": "application/json", ...corsHeaders }
     });
   }
+  
   try {
-    const keyDetailsStr = await env.API_KEYS.get(apiKey);
-    if (!keyDetailsStr) {
+    const listResponse = await env.API_KEYS.list();
+    let keyDetails = null;
+    let userEmail = null;
+    
+    for (const key of listResponse.keys) {
+      const userDataStr = await env.API_KEYS.get(key.name);
+      const userData = JSON.parse(userDataStr);
+      if (userData.api_key === apiKey) {
+        keyDetails = userData;
+        userEmail = key.name;
+        break;
+      }
+    }
+
+    if (!keyDetails) {
       return new Response(JSON.stringify({ error: "Clé API invalide." }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        headers: { "Content-Type": "application/json", ...corsHeaders }
       });
     }
-    const keyDetails = JSON.parse(keyDetailsStr);
+    
     if (!keyDetails.active) {
-        return new Response(JSON.stringify({ error: "Clé API inactive." }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+      return new Response(JSON.stringify({ error: "Clé API inactive." }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
     }
-    return { apiKey, keyDetails };
+
+    const today = new Date().toISOString().split("T")[0];
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    
+    const dailyKey = `daily_${apiKey}_${today}`;
+    const monthlyKey = `monthly_${apiKey}_${currentMonth}`;
+    
+    let dailyCount = parseInt(await env.USAGE_STATS.get(dailyKey)) || 0;
+    let monthlyCount = parseInt(await env.USAGE_STATS.get(monthlyKey)) || 0;
+    
+    if (dailyCount >= keyDetails.quota_daily) {
+      return new Response(JSON.stringify({ 
+        error: "Quota journalier dépassé", 
+        quota: keyDetails.quota_daily,
+        used: dailyCount,
+        reset_at: "minuit UTC"
+      }), {
+        status: 429,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+    
+    dailyCount++;
+    monthlyCount++;
+    
+    await env.USAGE_STATS.put(dailyKey, dailyCount.toString(), { expirationTtl: 86400 });
+    await env.USAGE_STATS.put(monthlyKey, monthlyCount.toString(), { expirationTtl: 2592000 });
+    
+    const logKey = `log_${apiKey}_${Date.now()}`;
+    await env.USAGE_STATS.put(logKey, JSON.stringify({
+      email: userEmail,
+      plan: keyDetails.plan,
+      endpoint: new URL(request.url).pathname,
+      timestamp: new Date().toISOString(),
+      daily_count: dailyCount,
+      monthly_count: monthlyCount
+    }), { expirationTtl: 2592000 });
+    
+    return { apiKey, keyDetails, usage: { daily: dailyCount, monthly: monthlyCount } };
+    
   } catch (e) {
     return new Response(JSON.stringify({ error: "Erreur lors de la validation de la clé API." }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      headers: { "Content-Type": "application/json", ...corsHeaders }
     });
   }
 }
 
-// ⏱️ FONCTION: Limitation de requêtes
-async function applyRateLimiting(request, env, authResult, corsHeaders) {
-    const { apiKey, keyDetails } = authResult;
-    const { rateLimit } = keyDetails;
-    if (!rateLimit) return null;
-    const currentTime = Math.floor(Date.now() / 1000);
-    const windowStart = keyDetails.rateLimit.timestamp || 0;
-    let count = keyDetails.rateLimit.count || 0;
-    if (currentTime - windowStart > rateLimit.window) {
-        count = 1;
-        keyDetails.rateLimit.timestamp = currentTime;
-    } else {
-        count++;
-    }
-    if (count > rateLimit.limit) {
-        return new Response(JSON.stringify({ error: "Limite de requêtes atteinte. Réessayez plus tard." }), {
-            status: 429,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
-    }
-    keyDetails.rateLimit.count = count;
-    await env.API_KEYS.put(apiKey, JSON.stringify(keyDetails));
-    return null;
-}
+
 
 // --- FONCTIONS DU GLOSSAIRE ---
 
@@ -452,7 +477,7 @@ async function addTerm(request, env, corsHeaders) {
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Erreur lors de l\'ajout", message: error.message }), {
+    return new Response(JSON.stringify({ error: "Error lors de l\'ajout", message: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
@@ -481,7 +506,7 @@ async function updateTerm(id, request, env, corsHeaders) {
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Erreur lors de la modification", message: error.message }), {
+    return new Response(JSON.stringify({ error: "Error lors de la modification", message: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
@@ -508,7 +533,7 @@ async function deleteTerm(id, request, env, corsHeaders) {
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Erreur lors de la suppression", message: error.message }), {
+    return new Response(JSON.stringify({ error: "Error lors de la suppression", message: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });

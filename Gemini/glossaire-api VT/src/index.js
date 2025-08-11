@@ -83,7 +83,20 @@ export default {
                </div>
                <div class="form-group">
                    <label>Choose your plan *</label>
-                   <select id="plan" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"><option value="gratuit">Free - 1,000 calls/day - $0</option><option value="starter">Starter - 20,000 calls/day - $0.50/1000 calls</option><option value="pro">Pro - 200,000 calls/day - $0.30/1000 calls</option></select></div>
+                   <div style="border: 2px solid #e5e7eb; border-radius: 8px;">
+                       <div class="plan-option">
+                           <input type="radio" name="plan" value="gratuit" id="plan-gratuit" checked>
+                           <label for="plan-gratuit" style="margin: 0; cursor: pointer; display: inline;">
+                               <strong>Free</strong> - 1,000 calls/day - 0€
+                           </label>
+                       </div>
+                       <div class="plan-option">
+                           <input type="radio" name="plan" value="starter" id="plan-starter">
+                           <label for="plan-starter" style="margin: 0; cursor: pointer; display: inline;">
+                               <strong>Starter</strong> - 20,000 calls/day - $0.50/1000 calls
+                           </label>
+                       </div>
+                   </div>
                </div>
                <button type="submit" class="btn">Get API Key</button>
            </form>
@@ -96,7 +109,7 @@ export default {
            const formData = {
                name: document.getElementById('name').value,
                email: document.getElementById('email').value,
-               plan: document.getElementById('plan').value
+               plan: document.querySelector('input[name="plan"]:checked').value
            };
            
            const response = await fetch('/api/register', {
@@ -113,7 +126,7 @@ export default {
                resultDiv.style.background = '#ecfdf5';
                resultDiv.style.color = '#065f46';
            } else {
-               resultDiv.innerHTML = '<h3>❌ Error</h3><p>' + result.error + '</p>';
+               resultDiv.innerHTML = '<h3>❌ Erreur</h3><p>' + result.error + '</p>';
                resultDiv.style.background = '#fef2f2';
                resultDiv.style.color = '#991b1b';
            }
@@ -139,10 +152,7 @@ export default {
           return authResult;
         }
 
-        const rateLimitResponse = await applyRateLimiting(request, env, authResult, corsHeaders);
-        if (rateLimitResponse) {
-          return rateLimitResponse;
-        }
+        
       }
 
       // Route pour créer une intention de paiement Stripe
@@ -177,8 +187,8 @@ export default {
       });
 
     } catch (error) {
-      console.error('Error dans l\'API:', error);
-      return new Response(JSON.stringify({ error: "Error serveur", message: error.message }), {
+      console.error('Erreur dans l\'API:', error);
+      return new Response(JSON.stringify({ error: "Erreur serveur", message: error.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
@@ -208,8 +218,8 @@ async function handleCreatePaymentIntent(request, env, corsHeaders) {
         });
 
     } catch (error) {
-        console.error("Error Stripe:", error);
-        return new Response(JSON.stringify({ error: "Error lors de la création du paiement", details: error.message }), {
+        console.error("Erreur Stripe:", error);
+        return new Response(JSON.stringify({ error: "Erreur lors de la création du paiement", details: error.message }), {
             status: 500,
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
@@ -245,7 +255,7 @@ async function handleRegister(request, env, corsHeaders) {
     
     const planConfig = {
       gratuit: { quota: 1000, price: 0 },
-      starter: { quota: 20000, price: 0.50 }, pro: { quota: 200000, price: 0.30 }
+      starter: { quota: 20000, price: 0.50 }
     };
 
     const config = planConfig[plan] || planConfig.gratuit;
@@ -259,12 +269,10 @@ async function handleRegister(request, env, corsHeaders) {
       quota_daily: config.quota,
       price_per_1000: config.price,
       created_at: new Date().toISOString(),
-      usage_today: 0,
-      last_reset: new Date().toISOString().split('T')[0],
       active: true,
     };
 
-    await env.API_KEYS.put(email, JSON.stringify(userData));
+    await env.API_KEYS.put(apiKey, JSON.stringify(userData));
 
     return new Response(JSON.stringify({
       success: true,
@@ -277,9 +285,9 @@ async function handleRegister(request, env, corsHeaders) {
     });
 
   } catch (error) {
-    console.error('Error lors de l\'inscription:', error);
+    console.error('Erreur lors de l\'inscription:', error);
     return new Response(JSON.stringify({
-      error: 'Error lors de la création de la clé API',
+      error: 'Erreur lors de la création de la clé API',
       details: error.message
     }), {
       status: 500,
@@ -288,73 +296,82 @@ async function handleRegister(request, env, corsHeaders) {
   }
 }
 
-// 🔒 FONCTION: Authentification par clé API
+//  FONCTION: Authentification par clé API + Comptage usage
 async function authenticateRequest(request, env, corsHeaders) {
-  const apiKey = request.headers.get('X-API-Key');
+  const apiKey = request.headers.get("X-API-Key");
   if (!apiKey) {
     return new Response(JSON.stringify({ error: "Clé API manquante. Veuillez fournir l'en-tête 'X-API-Key'." }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      headers: { "Content-Type": "application/json", ...corsHeaders }
     });
   }
+  
   try {
-    // Iterate through all keys in API_KEYS to find the matching API key
-    const listResponse = await env.API_KEYS.list();
-    let keyDetails = null; // Use keyDetails directly
-    for (const key of listResponse.keys) {
-      const userDataStr = await env.API_KEYS.get(key.name);
-      const userData = JSON.parse(userDataStr);
-      if (userData.api_key === apiKey) {
-        keyDetails = userData;
-        break;
-      }
-    }
-
-    if (!keyDetails) { // Use keyDetails directly
+    const keyDetailsStr = await env.API_KEYS.get(apiKey);
+    if (!keyDetailsStr) {
       return new Response(JSON.stringify({ error: "Clé API invalide." }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        headers: { "Content-Type": "application/json", ...corsHeaders }
       });
     }
+    
+    const keyDetails = JSON.parse(keyDetailsStr);
+    
     if (!keyDetails.active) {
-        return new Response(JSON.stringify({ error: "Clé API inactive." }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+      return new Response(JSON.stringify({ error: "Clé API inactive." }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
     }
-    return { apiKey, keyDetails };
+
+    const today = new Date().toISOString().split("T")[0];
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    
+    const dailyKey = `daily_${apiKey}_${today}`;
+    const monthlyKey = `monthly_${apiKey}_${currentMonth}`;
+    
+    let dailyCount = parseInt(await env.USAGE_STATS.get(dailyKey)) || 0;
+    let monthlyCount = parseInt(await env.USAGE_STATS.get(monthlyKey)) || 0;
+    
+    if (dailyCount >= keyDetails.quota_daily) {
+      return new Response(JSON.stringify({ 
+        error: "Quota journalier dépassé", 
+        quota: keyDetails.quota_daily,
+        used: dailyCount,
+        reset_at: "minuit UTC"
+      }), {
+        status: 429,
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+    
+    dailyCount++;
+    monthlyCount++;
+    
+    await env.USAGE_STATS.put(dailyKey, dailyCount.toString(), { expirationTtl: 86400 });
+    await env.USAGE_STATS.put(monthlyKey, monthlyCount.toString(), { expirationTtl: 2592000 });
+    
+    const logKey = `log_${apiKey}_${Date.now()}`;
+    await env.USAGE_STATS.put(logKey, JSON.stringify({
+      email: keyDetails.email,
+      plan: keyDetails.plan,
+      endpoint: new URL(request.url).pathname,
+      timestamp: new Date().toISOString(),
+      daily_count: dailyCount,
+      monthly_count: monthlyCount
+    }), { expirationTtl: 2592000 });
+    
+    return { apiKey, keyDetails, usage: { daily: dailyCount, monthly: monthlyCount } };
+    
   } catch (e) {
-    return new Response(JSON.stringify({ error: "Error lors de la validation de la clé API." }), {
+    return new Response(JSON.stringify({ error: "Erreur lors de la validation de la clé API." }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      headers: { "Content-Type": "application/json", ...corsHeaders }
     });
   }
 }
 
-// ⏱️ FONCTION: Limitation de requêtes
-async function applyRateLimiting(request, env, authResult, corsHeaders) {
-    const { apiKey, keyDetails } = authResult;
-    const { rateLimit } = keyDetails;
-    if (!rateLimit) return null;
-    const currentTime = Math.floor(Date.now() / 1000);
-    const windowStart = keyDetails.rateLimit.timestamp || 0;
-    let count = keyDetails.rateLimit.count || 0;
-    if (currentTime - windowStart > rateLimit.window) {
-        count = 1;
-        keyDetails.rateLimit.timestamp = currentTime;
-    } else {
-        count++;
-    }
-    if (count > rateLimit.limit) {
-        return new Response(JSON.stringify({ error: "Limite de requêtes atteinte. Réessayez plus tard." }), {
-            status: 429,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
-    }
-    keyDetails.rateLimit.count = count;
-    await env.API_KEYS.put(apiKey, JSON.stringify(keyDetails));
-    return null;
-}
+
 
 // --- FONCTIONS DU GLOSSAIRE ---
 
@@ -378,7 +395,7 @@ async function getAllTerms(env, corsHeaders) {
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Error lors de la récupération des termes", message: error.message }), {
+    return new Response(JSON.stringify({ error: "Erreur lors de la récupération des termes", message: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
@@ -415,7 +432,7 @@ async function searchTerms(query, env, corsHeaders) {
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Error lors de la recherche", message: error.message }), {
+    return new Response(JSON.stringify({ error: "Erreur lors de la recherche", message: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
