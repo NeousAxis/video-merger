@@ -1,0 +1,48 @@
+
+[
+  {
+    "name": "StarkNet",
+    "description": "Un ZK-Rollup décentralisé, permissionless et sans censure.",
+    "actions": [
+      "Bridge des fonds vers StarkNet via StarkGate.",
+      "Utiliser des dApps sur le mainnet (Argent, Braavos).",
+      "Participer à la gouvernance sur le forum StarkNet."
+    ],
+    "score_components": {
+      "preparation_level": 90,
+      "interaction_level": 70,
+      "potential_gain": 85,
+      "execution_difficulty": 60
+    }
+  },
+  {
+    "name": "zkSync",
+    "description": "Une solution de mise à l'échelle de la couche 2 qui alimente Ethereum.",
+    "actions": [
+      "Effectuer des transactions sur le testnet zkSync.",
+      "Minter un NFT sur une marketplace du testnet.",
+      "Déployer un simple smart contract."
+    ],
+    "score_components": {
+      "preparation_level": 80,
+      "interaction_level": 75,
+      "potential_gain": 88,
+      "execution_difficulty": 50
+    }
+  },
+  {
+    "name": "LayerZero",
+    "description": "Un protocole d'interopérabilité omnichain.",
+    "actions": [
+      "Utiliser le bridge Stargate pour transférer des actifs.",
+      "Voter sur des propositions de gouvernance Stargate.",
+      "Interagir avec des projets qui utilisent LayerZero."
+    ],
+    "score_components": {
+      "preparation_level": 75,
+      "interaction_level": 80,
+      "potential_gain": 90,
+      "execution_difficulty": 65
+    }
+  }
+]

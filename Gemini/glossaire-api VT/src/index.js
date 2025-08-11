@@ -298,14 +298,24 @@ async function authenticateRequest(request, env, corsHeaders) {
     });
   }
   try {
-    const keyDetailsStr = await env.API_KEYS.get(apiKey);
-    if (!keyDetailsStr) {
+    // Iterate through all keys in API_KEYS to find the matching API key
+    const listResponse = await env.API_KEYS.list();
+    let keyDetails = null; // Use keyDetails directly
+    for (const key of listResponse.keys) {
+      const userDataStr = await env.API_KEYS.get(key.name);
+      const userData = JSON.parse(userDataStr);
+      if (userData.api_key === apiKey) {
+        keyDetails = userData;
+        break;
+      }
+    }
+
+    if (!keyDetails) { // Use keyDetails directly
       return new Response(JSON.stringify({ error: "Clé API invalide." }), {
         status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     }
-    const keyDetails = JSON.parse(keyDetailsStr);
     if (!keyDetails.active) {
         return new Response(JSON.stringify({ error: "Clé API inactive." }), {
             status: 403,

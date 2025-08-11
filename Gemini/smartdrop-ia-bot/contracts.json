@@ -1,0 +1,11 @@
+{
+  "ArbitrumGoerli": [
+    "0x1234abcd…"
+  ],
+  "OptimismGoerli": [
+    "0x5678ef01…"
+  ],
+  "PolygonMumbai": [
+    "0x9abc2345…"
+  ]
+}

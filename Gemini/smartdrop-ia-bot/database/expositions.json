@@ -1,0 +1,15 @@
+[
+  {
+    "name": "zkSync",
+    "validated_at": "2025-07-23T12:08:07.290348Z",
+    "status": "valid\u00e9",
+    "score": 69,
+    "actions_effectuees": [
+      "Effectuer des transactions sur le testnet zkSync.",
+      "Minter un NFT sur une marketplace du testnet.",
+      "D\u00e9ployer un simple smart contract."
+    ],
+    "source": "Manuel",
+    "url": "N/A"
+  }
+]

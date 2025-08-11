@@ -1,0 +1,7 @@
+name = "glossaire-registration"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "API_KEYS"
+id = "38f65103fa844e12b99220b3fd9a5ac1"
