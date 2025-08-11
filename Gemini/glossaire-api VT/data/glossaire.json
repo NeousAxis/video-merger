@@ -1,0 +1,482 @@
+[
+  {
+    "terme": "A posteriori",
+    "definition": "Connaissance dérivée de l’expérience",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "A priori",
+    "definition": "Connaissance indépendante de l’expérience",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Agnosticisme",
+    "definition": "Inconnaissance du divin ou de l’absolu",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Allégorie",
+    "definition": "Récit symbolique d’une idée abstraite",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Analytique",
+    "definition": "Jugement dont le prédicat est contenu dans le sujet",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Antinomie",
+    "definition": "Contradiction entre deux lois de pensée",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Concept",
+    "definition": "Représentation mentale abstraite",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Contingent",
+    "definition": "Ce qui peut être autrement",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Corrélation",
+    "definition": "Lien mutuel sans causalité nécessaire",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Critère",
+    "definition": "Signe permettant de juger du vrai",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Déduction",
+    "definition": "Raisonnement du général au particulier",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Déterminisme",
+    "definition": "Nécessité des enchaînements causaux",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Dialectique",
+    "definition": "Méthode ascendante vers les Idées",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Dogmatisme",
+    "definition": "Affirmation sans critique",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Doxa",
+    "definition": "Opinion commune, non fondée",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Empirisme",
+    "definition": "Connaissance issue de l’expérience",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Épistémologie",
+    "definition": "Étude critique des sciences",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Evidence",
+    "definition": "Ce qui s’impose immédiatement à l’esprit",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Idéalisme",
+    "definition": "Réduction de la réalité à la pensée",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Induction",
+    "definition": "Raisonnement du particulier au général",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Innéisme",
+    "definition": "Idées présentes dès la naissance",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Intelligible",
+    "definition": "Accessible à l’intellect seul",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Intuition",
+    "definition": "Connaissance immédiate",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Maïeutique",
+    "definition": "Art d’accoucher les esprits",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Matérialisme",
+    "definition": "Seule la matière existe",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Nécessaire",
+    "definition": "Ce qui ne peut pas ne pas être",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Objectif",
+    "definition": "Indépendant du sujet",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Postulat",
+    "definition": "Proposition admise sans preuve",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Rationalisme",
+    "definition": "Primauté de la raison",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Scepticisme",
+    "definition": "Doute sur la vérité certaine",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Solipsisme",
+    "definition": "Seul le moi existe",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Spéculation",
+    "definition": "Pensée abstraite et théorique",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Subjectif",
+    "definition": "Propre au sujet",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Synthétique",
+    "definition": "Ajoute une information nouvelle",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Transcendant",
+    "definition": "Ce qui dépasse le monde",
+    "synonymes": [],
+    "categories": ["Épistémologie"]
+  },
+  {
+    "terme": "Autarcie",
+    "definition": "Suffisance à soi-même",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Autonomie",
+    "definition": "Capacité à se donner sa propre loi",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Axiologie",
+    "definition": "Étude des valeurs",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Bonheur",
+    "definition": "Satisfaction durable",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Catégorique",
+    "definition": "Commandement moral universel",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Cause finale",
+    "definition": "But d’une action ou d’un être",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Cynisme",
+    "definition": "Mépris des conventions sociales",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Déontologie",
+    "definition": "Devoirs d’une profession",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Désir",
+    "definition": "Tendance consciente vers un objet",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Devoir",
+    "definition": "Obligation morale",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Eudémonisme",
+    "definition": "Bonheur comme fin de la vie",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Hédonisme",
+    "definition": "Recherche du plaisir",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Impératif",
+    "definition": "Commandement de la raison",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Légal",
+    "definition": "Conforme à la loi",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Libéralisme",
+    "definition": "Limitation du pouvoir étatique",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Libre arbitre",
+    "definition": "Choix sans contrainte",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Maxime",
+    "definition": "Règle de conduite personnelle",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Mœurs",
+    "definition": "Coutumes d’une société",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Morale",
+    "definition": "Ensemble des règles du bien",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Obligation",
+    "definition": "Ce que l’on doit faire moralement",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Passion",
+    "definition": "Trouble de la raison par l’affect",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Stoïcisme",
+    "definition": "Acceptation du destin par la raison",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Téléologie",
+    "definition": "Étude des finalités",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Utilitarisme",
+    "definition": "Maximisation du bonheur commun",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Vertu",
+    "definition": "Disposition à bien agir",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Volonté",
+    "definition": "Faculté de se déterminer",
+    "synonymes": [],
+    "categories": ["Éthique & Politique"]
+  },
+  {
+    "terme": "Absolu",
+    "definition": "Ce qui existe par soi-même",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Accident",
+    "definition": "Ce qui n’est pas essentiel",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Acte",
+    "definition": "Réalisation de la puissance",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Âme",
+    "definition": "Principe de vie et de pensée",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Contingence",
+    "definition": "Ce qui peut être autrement",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Cosmologie",
+    "definition": "Étude de l’univers comme tout",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "En-soi",
+    "definition": "Être massif, non conscient",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Essence",
+    "definition": "Ce qui fait l’être d’une chose",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Existence",
+    "definition": "Le fait d’être",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Finitude",
+    "definition": "Limitation et mortalité humaine",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Métaphysique",
+    "definition": "Étude des causes premières",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Monade",
+    "definition": "Substances simples",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Néant",
+    "definition": "Non-être, vide",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Nouménal",
+    "definition": "Chose en soi, inaccessible",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Ontologie",
+    "definition": "Étude de l’être",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Phénomène",
+    "definition": "Ce qui apparaît à la conscience",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Pour-soi",
+    "definition": "Conscience libre et réflexive",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Substance",
+    "definition": "Ce qui existe en soi",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  },
+  {
+    "terme": "Téléologie",
+    "definition": "Finalité dans la nature",
+    "synonymes": [],
+    "categories": ["Ontologie & Métaphysique"]
+  }
+]

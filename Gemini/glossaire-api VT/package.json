@@ -1,0 +1,19 @@
+{
+	"name": "glossaire-api",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"prepare-import": "node scripts/import-glossaire.js",
+		"do-import": "npx wrangler kv:bulk put ./scripts/kv-bulk-upload.json --namespace-id=1155bab917014549985e60328bf96d98"
+	},
+	"devDependencies": {
+		"wrangler": "^4.28.1"
+	},
+	"dependencies": {
+		"itty-router": "^5.0.21",
+		"stripe": "^16.2.0"
+	}
+}

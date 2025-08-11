@@ -1,0 +1,503 @@
+// API Glossaire Simple - Version avec Stripe
+// Pour Cloudflare Workers
+import Stripe from 'stripe';
+
+export default {
+  async fetch(request, env, ctx) {
+    // Configuration CORS
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*', 
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
+    };
+
+    // Gestion OPTIONS pour CORS
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    try {
+      const url = new URL(request.url);
+      const path = url.pathname;
+      const method = request.method;
+
+      // Route publique principale pour le formulaire d'inscription
+      if ((path === '/' || path === '/register') && method === 'GET') {
+        const registrationFormHtml = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>API Glossaire - Obtenir une clé API</title>
+   <style>
+       * { margin: 0; padding: 0; box-sizing: border-box; }
+       body {
+           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           min-height: 100vh;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           padding: 20px;
+       }
+       .container {
+           background: white;
+           border-radius: 16px;
+           box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+           max-width: 500px;
+           width: 100%;
+           overflow: hidden;
+       }
+       .header {
+           background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+           color: white;
+           padding: 2rem;
+           text-align: center;
+       }
+       .header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+       .form-container { padding: 2rem; }
+       .form-group { margin-bottom: 1.5rem; }
+       label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+       input { width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; }
+       .plan-option { padding: 1rem; border-bottom: 1px solid #f3f4f6; cursor: pointer; }
+       .plan-option:last-child { border-bottom: none; }
+       .plan-option input[type="radio"] { margin-right: 0.75rem; }
+       .btn { width: 100%; background: #4f46e5; color: white; border: none; padding: 0.875rem; border-radius: 8px; cursor: pointer; }
+   </style>
+</head>
+<body>
+   <div class="container">
+       <div class="header">
+           <h1>🧠 Philosophy Glossary API</h1>
+           <p>Access high-quality philosophical definitions for AI training</p>
+       </div>
+       <div class="form-container">
+           <form id="apiKeyForm">
+               <div class="form-group">
+                   <label for="name">Company / AI Platform *</label>
+                   <input type="text" id="name" required placeholder="OpenAI, Anthropic, Google AI...">
+               </div>
+               <div class="form-group">
+                   <label for="email">Technical Contact Email *</label>
+                   <input type="email" id="email" required placeholder="api-team@company.com">
+               </div>
+               <div class="form-group">
+                   <label>Choose your plan *</label>
+                   <select id="plan" style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;"><option value="gratuit">Free - 1,000 calls/day - $0</option><option value="starter">Starter - 20,000 calls/day - $0.50/1000 calls</option><option value="pro">Pro - 200,000 calls/day - $0.30/1000 calls</option></select></div>
+               </div>
+               <button type="submit" class="btn">Get API Key</button>
+           </form>
+           <div id="result" style="margin-top: 1rem; display: none; padding: 1rem; border-radius: 8px;"></div>
+       </div>
+   </div>
+   <script>
+       document.getElementById('apiKeyForm').addEventListener('submit', async (e) => {
+           e.preventDefault();
+           const formData = {
+               name: document.getElementById('name').value,
+               email: document.getElementById('email').value,
+               plan: document.getElementById('plan').value
+           };
+           
+           const response = await fetch('/api/register', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(formData)
+           });
+           
+           const result = await response.json();
+           const resultDiv = document.getElementById('result');
+           
+           if (response.ok) {
+               resultDiv.innerHTML = '<h3>✅ Success</h3><p>Your API key has been generated. Please check your email.</p>';
+               resultDiv.style.background = '#ecfdf5';
+               resultDiv.style.color = '#065f46';
+           } else {
+               resultDiv.innerHTML = '<h3>❌ Error</h3><p>' + result.error + '</p>';
+               resultDiv.style.background = '#fef2f2';
+               resultDiv.style.color = '#991b1b';
+           }
+           resultDiv.style.display = 'block';
+       });
+   </script>
+</body>
+</html>`;
+        return new Response(registrationFormHtml, {
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        });
+      }
+
+      // Route pour l'inscription et la génération de clé API
+      if (path === '/api/register' && method === 'POST') {
+        return await handleRegister(request, env, corsHeaders);
+      }
+
+      // Authentification et limitation de requêtes pour les routes API
+      if (path.startsWith('/api/')) {
+        const authResult = await authenticateRequest(request, env, corsHeaders);
+        if (authResult instanceof Response) {
+          return authResult;
+        }
+
+        const rateLimitResponse = await applyRateLimiting(request, env, authResult, corsHeaders);
+        if (rateLimitResponse) {
+          return rateLimitResponse;
+        }
+      }
+
+      // Route pour créer une intention de paiement Stripe
+      if (path === '/api/create-payment-intent' && method === 'POST') {
+        return await handleCreatePaymentIntent(request, env, corsHeaders);
+      }
+
+      // --- Routes du glossaire ---
+      if (path === '/api/terms' && method === 'GET') {
+        return await getAllTerms(env, corsHeaders);
+      }
+      if (path === '/api/search' && method === 'GET') {
+        const query = url.searchParams.get('q');
+        return await searchTerms(query, env, corsHeaders);
+      }
+      if (path === '/api/terms' && method === 'POST') {
+        return await addTerm(request, env, corsHeaders);
+      }
+      if (path.startsWith('/api/terms/') && method === 'PUT') {
+        const id = path.split('/').pop();
+        return await updateTerm(id, request, env, corsHeaders);
+      }
+      if (path.startsWith('/api/terms/') && method === 'DELETE') {
+        const id = path.split('/').pop();
+        return await deleteTerm(id, env, corsHeaders);
+      }
+
+      // Route non trouvée
+      return new Response(JSON.stringify({ error: "Route non trouvée" }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+
+    } catch (error) {
+      console.error('Error dans l\'API:', error);
+      return new Response(JSON.stringify({ error: "Error serveur", message: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+};
+
+// 💳 FONCTION: Gérer la création d'une intention de paiement Stripe
+async function handleCreatePaymentIntent(request, env, corsHeaders) {
+    try {
+        const stripe = new Stripe(env.STRIPE_API_KEY);
+        
+        const body = await request.json().catch(() => ({}));
+        const amount = body.amount || 1000;
+        const currency = body.currency || 'eur';
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amount,
+            currency: currency,
+            payment_method_types: ['card'],
+        });
+
+        return new Response(JSON.stringify({
+            clientSecret: paymentIntent.client_secret
+        }), {
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+
+    } catch (error) {
+        console.error("Error Stripe:", error);
+        return new Response(JSON.stringify({ error: "Error lors de la création du paiement", details: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+    }
+}
+
+// 🔑 FONCTION: Gérer l'inscription et la génération de clé API
+async function handleRegister(request, env, corsHeaders) {
+  try {
+    const body = await request.json();
+    const { name, email, description, plan } = body;
+
+    if (!name || !email || !plan) {
+      return new Response(JSON.stringify({
+        error: 'Nom, email et plan sont requis'
+      }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    const existingUser = await env.API_KEYS.get(email);
+    if (existingUser) {
+      return new Response(JSON.stringify({
+        error: 'Un utilisateur avec cet email existe déjà.'
+      }), { 
+        status: 409,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    const apiKey = `gls_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+    
+    const planConfig = {
+      gratuit: { quota: 1000, price: 0 },
+      starter: { quota: 20000, price: 0.50 }, pro: { quota: 200000, price: 0.30 }
+    };
+
+    const config = planConfig[plan] || planConfig.gratuit;
+
+    const userData = {
+      api_key: apiKey,
+      name,
+      email,
+      description: description || '',
+      plan,
+      quota_daily: config.quota,
+      price_per_1000: config.price,
+      created_at: new Date().toISOString(),
+      usage_today: 0,
+      last_reset: new Date().toISOString().split('T')[0],
+      active: true,
+    };
+
+    await env.API_KEYS.put(email, JSON.stringify(userData));
+
+    return new Response(JSON.stringify({
+      success: true,
+      api_key: apiKey,
+      plan,
+      quota: `${config.quota} appels/jour`,
+      message: 'Clé API créée avec succès'
+    }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+
+  } catch (error) {
+    console.error('Error lors de l\'inscription:', error);
+    return new Response(JSON.stringify({
+      error: 'Error lors de la création de la clé API',
+      details: error.message
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+// 🔒 FONCTION: Authentification par clé API
+async function authenticateRequest(request, env, corsHeaders) {
+  const apiKey = request.headers.get('X-API-Key');
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: "Clé API manquante. Veuillez fournir l'en-tête 'X-API-Key'." }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+  try {
+    const keyDetailsStr = await env.API_KEYS.get(apiKey);
+    if (!keyDetailsStr) {
+      return new Response(JSON.stringify({ error: "Clé API invalide." }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const keyDetails = JSON.parse(keyDetailsStr);
+    if (!keyDetails.active) {
+        return new Response(JSON.stringify({ error: "Clé API inactive." }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+    }
+    return { apiKey, keyDetails };
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "Error lors de la validation de la clé API." }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+// ⏱️ FONCTION: Limitation de requêtes
+async function applyRateLimiting(request, env, authResult, corsHeaders) {
+    const { apiKey, keyDetails } = authResult;
+    const { rateLimit } = keyDetails;
+    if (!rateLimit) return null;
+    const currentTime = Math.floor(Date.now() / 1000);
+    const windowStart = keyDetails.rateLimit.timestamp || 0;
+    let count = keyDetails.rateLimit.count || 0;
+    if (currentTime - windowStart > rateLimit.window) {
+        count = 1;
+        keyDetails.rateLimit.timestamp = currentTime;
+    } else {
+        count++;
+    }
+    if (count > rateLimit.limit) {
+        return new Response(JSON.stringify({ error: "Limite de requêtes atteinte. Réessayez plus tard." }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+    }
+    keyDetails.rateLimit.count = count;
+    await env.API_KEYS.put(apiKey, JSON.stringify(keyDetails));
+    return null;
+}
+
+// --- FONCTIONS DU GLOSSAIRE ---
+
+async function getAllTerms(env, corsHeaders) {
+  try {
+    const termsList = await env.GLOSSARY_TERMS.get('terms_index');
+    if (!termsList) {
+      return new Response(JSON.stringify({ terms: [], count: 0, message: "Aucun terme trouvé." }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const termsIds = JSON.parse(termsList);
+    const terms = [];
+    for (const id of termsIds) {
+      const termData = await env.GLOSSARY_TERMS.get(id);
+      if (termData) {
+        terms.push(JSON.parse(termData));
+      }
+    }
+    return new Response(JSON.stringify({ terms: terms, count: terms.length }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Error lors de la récupération des termes", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+async function searchTerms(query, env, corsHeaders) {
+  if (!query || query.trim() === '') {
+    return new Response(JSON.stringify({ error: "Paramètre 'q' requis" }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+  try {
+    const termsList = await env.GLOSSARY_TERMS.get('terms_index');
+    if (!termsList) {
+      return new Response(JSON.stringify({ query: query, results: [], count: 0 }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const termsIds = JSON.parse(termsList);
+    const results = [];
+    for (const id of termsIds) {
+      const termData = await env.GLOSSARY_TERMS.get(id);
+      if (termData) {
+        const term = JSON.parse(termData);
+        const searchTerm = query.toLowerCase();
+        if (term.terme.toLowerCase().includes(searchTerm) || term.definition.toLowerCase().includes(searchTerm)) {
+          results.push(term);
+        }
+      }
+    }
+    return new Response(JSON.stringify({ query: query, results: results, count: results.length }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Error lors de la recherche", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+async function addTerm(request, env, corsHeaders) {
+  try {
+    const body = await request.json();
+    if (!body.terme || !body.definition) {
+      return new Response(JSON.stringify({ error: "Données manquantes", required: ["terme", "definition"] }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newTerm = {
+      id: id,
+      terme: body.terme.trim(),
+      definition: body.definition.trim(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    await env.GLOSSARY_TERMS.put(`term_${id}`, JSON.stringify(newTerm));
+    const existingIndex = await env.GLOSSARY_TERMS.get('terms_index');
+    const termsIds = existingIndex ? JSON.parse(existingIndex) : [];
+    termsIds.push(id);
+    await env.GLOSSARY_TERMS.put('terms_index', JSON.stringify(termsIds));
+    return new Response(JSON.stringify({ message: "Terme ajouté avec succès", term: newTerm }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Error lors de l\'ajout", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+async function updateTerm(id, request, env, corsHeaders) {
+  try {
+    const existingTerm = await env.GLOSSARY_TERMS.get(`term_${id}`);
+    if (!existingTerm) {
+      return new Response(JSON.stringify({ error: "Terme non trouvé" }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const body = await request.json();
+    const currentTerm = JSON.parse(existingTerm);
+    const updatedTerm = {
+      ...currentTerm,
+      terme: body.terme ? body.terme.trim() : currentTerm.terme,
+      definition: body.definition ? body.definition.trim() : currentTerm.definition,
+      updated_at: new Date().toISOString()
+    };
+    await env.GLOSSARY_TERMS.put(`term_${id}`, JSON.stringify(updatedTerm));
+    return new Response(JSON.stringify({ message: "Terme modifié avec succès", term: updatedTerm }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Error lors de la modification", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+async function deleteTerm(id, request, env, corsHeaders) {
+  try {
+    const existingTerm = await env.GLOSSARY_TERMS.get(`term_${id}`);
+    if (!existingTerm) {
+      return new Response(JSON.stringify({ error: "Terme non trouvé" }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    await env.GLOSSARY_TERMS.delete(`term_${id}`);
+    const existingIndex = await env.GLOSSARY_TERMS.get('terms_index');
+    if (existingIndex) {
+      const termsIds = JSON.parse(existingIndex);
+      const filteredIds = termsIds.filter(termId => termId !== id);
+      await env.GLOSSARY_TERMS.put('terms_index', JSON.stringify(filteredIds));
+    }
+    return new Response(JSON.stringify({ message: "Terme supprimé avec succès" }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Error lors de la suppression", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}

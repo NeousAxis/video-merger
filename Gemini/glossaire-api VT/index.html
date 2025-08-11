@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>API Glossaire - Obtenir une clé API</title>
+   <style>
+       * { margin: 0; padding: 0; box-sizing: border-box; }
+       body {
+           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           min-height: 100vh;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           padding: 20px;
+       }
+       .container {
+           background: white;
+           border-radius: 16px;
+           box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+           max-width: 500px;
+           width: 100%;
+           overflow: hidden;
+       }
+       .header {
+           background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+           color: white;
+           padding: 2rem;
+           text-align: center;
+       }
+       .header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+       .form-container { padding: 2rem; }
+       .form-group { margin-bottom: 1.5rem; }
+       label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+       input, select { width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; }
+       .btn { width: 100%; background: #4f46e5; color: white; border: none; padding: 0.875rem; border-radius: 8px; cursor: pointer; }
+   </style>
+</head>
+<body>
+   <div class="container">
+       <div class="header">
+           <h1> API Glossaire</h1>
+           <p>Accédez à notre base de connaissances philosophiques</p>
+       </div>
+       <div class="form-container">
+           <form id="apiKeyForm">
+               <div class="form-group">
+                   <label for="name">Nom de votre projet *</label>
+                   <input type="text" id="name" required placeholder="Mon Bot IA">
+               </div>
+               <div class="form-group">
+                   <label for="email">Email *</label>
+                   <input type="email" id="email" required placeholder="votre@email.com">
+               </div>
+               <div class="form-group">
+                   <label for="plan">Plan</label>
+                   <select id="plan">
+                       <option value="gratuit">Gratuit - 1 000 appels/jour</option>
+                       <option value="starter">Starter - 20 000 appels/jour</option>
+                   </select>
+               </div>
+               <button type="submit" class="btn">Obtenir ma clé API</button>
+           </form>
+           <div id="result" style="margin-top: 1rem; display: none; padding: 1rem; border-radius: 8px;"></div>
+       </div>
+   </div>
+   <script>
+       document.getElementById('apiKeyForm').addEventListener('submit', async (e) => {
+           e.preventDefault();
+           const formData = {
+               name: document.getElementById('name').value,
+               email: document.getElementById('email').value,
+               plan: document.getElementById('plan').value
+           };
+           
+           const response = await fetch('/api/register', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(formData)
+           });
+           
+           const result = await response.json();
+           const resultDiv = document.getElementById('result');
+           
+           if (response.ok) {
+               resultDiv.innerHTML = `<h3> Succès</h3><p>Votre clé API a été générée. Veuillez vérifier votre email.</p>`;
+               resultDiv.style.background = '#ecfdf5';
+               resultDiv.style.color = '#065f46';
+           } else {
+               resultDiv.innerHTML = `<h3>❌ Erreur</h3><p>${result.error}</p>`;
+               resultDiv.style.background = '#fef2f2';
+               resultDiv.style.color = '#991b1b';
+           }
+           resultDiv.style.display = 'block';
+       });
+   </script>
+</body>
+</html>

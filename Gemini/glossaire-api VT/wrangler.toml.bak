@@ -1,0 +1,11 @@
+name = "glossaire-api-vt"
+account_id = "b2068a4d683aef98e2edcf4662eb0699"
+compatibility_date = "2025-08-05"
+main = "src/index.js"
+
+[env.production]
+vars = { NODE_ENV = "production" }
+kv_namespaces = [
+  { binding = "TOKENS_KV", id = "934bb8a4d59f462d9f1bb888ace4f894" },
+  { binding = "GLOSSAIRE_KV", id = "b4c68848a416461bb54d4d4b56cedf4f" }
+]

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>API Glossaire - Obtenir une clé API</title>
+   <style>
+       /* Votre CSS du formulaire ici */
+       * { margin: 0; padding: 0; box-sizing: border-box; }
+       body {
+           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           min-height: 100vh;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           padding: 20px;
+       }
+       .container {
+           background: white;
+           border-radius: 16px;
+           box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+           overflow: hidden;
+           max-width: 500px;
+           width: 100%;
+       }
+       .header {
+           background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+           color: white;
+           padding: 2rem;
+           text-align: center;
+       }
+       .header h1 {
+           font-size: 1.8rem;
+           margin-bottom: 0.5rem;
+       }
+       .header p {
+           opacity: 0.9;
+           font-size: 0.95rem;
+       }
+       .form-container {
+           padding: 2rem;
+       }
+       .form-group {
+           margin-bottom: 1.5rem;
+       }
+       label {
+           display: block;
+           margin-bottom: 0.5rem;
+           font-weight: 500;
+           color: #374151;
+       }
+       input, select, textarea {
+           width: 100%;
+           padding: 0.75rem;
+           border: 2px solid #e5e7eb;
+           border-radius: 8px;
+           font-size: 0.95rem;
+           transition: border-color 0.2s;
+       }
+       input:focus, select:focus, textarea:focus {
+           outline: none;
+           border-color: #4f46e5;
+       }
+       .plan-selector {
+           display: grid;
+           grid-template-columns: 1fr 1fr;
+           gap: 1rem;
+           margin-bottom: 1.5rem;
+       }
+       .plan-card {
+           border: 2px solid #e5e7eb;
+           border-radius: 8px;
+           padding: 1rem;
+           cursor: pointer;
+           transition: all 0.2s;
+           text-align: center;
+       }
+       .plan-card:hover {
+           border-color: #4f46e5;
+       }
+       .plan-card.selected {
+           border-color: #4f46e5;
+           background: #f0f9ff;
+       }
+       .plan-name {
+           font-weight: 600;
+           margin-bottom: 0.5rem;
+       }
+       .plan-quota {
+           font-size: 0.85rem;
+           color: #6b7280;
+       }
+       .btn {
+           width: 100%;
+           background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+           color: white;
+           border: none;
+           padding: 0.875rem;
+           border-radius: 8px;
+           font-size: 1rem;
+           font-weight: 500;
+           cursor: pointer;
+           transition: transform 0.2s;
+       }
+       .btn:hover {
+           transform: translateY(-1px);
+       }
+       .btn:disabled {
+           opacity: 0.5;
+           cursor: not-allowed;
+           transform: none;
+       }
+       .result {
+           margin-top: 1.5rem;
+           padding: 1rem;
+           border-radius: 8px;
+           display: none;
+       }
+       .result.success {
+           background: #ecfdf5;
+           border: 1px solid #d1fae5;
+           color: #065f46;
+       }
+       .result.error {
+           background: #fef2f2;
+           border: 1px solid #fecaca;
+           color: #991b1b;
+       }
+       .api-key {
+           font-family: 'Monaco', 'Menlo', monospace;
+           background: #f9fafb;
+           padding: 0.5rem;
+           border-radius: 4px;
+           border: 1px solid #d1d5db;
+           margin: 0.5rem 0;
+           word-break: break-all;
+       }
+       .copy-btn {
+           background: #6b7280;
+           color: white;
+           border: none;
+           padding: 0.25rem 0.5rem;
+           border-radius: 4px;
+           font-size: 0.75rem;
+           cursor: pointer;
+           margin-left: 0.0rem;
+       }
+       .pricing-info {
+           background: #f8fafc;
+           border-radius: 8px;
+           padding: 1rem;
+           margin-bottom: 1.5rem;
+           font-size: 0.85rem;
+           color: #475569;
+       }
+   </style>
+</head>
+<body>
+   <div class="container">
+       <div class="header">
+           <h1> API Glossaire</h1>
+           <p>Accédez à notre base de connaissances philosophiques</p>
+       </div>
+       
+       <div class="form-container">
+           <form id="apiKeyForm">
+               <div class="form-group">
+                   <label for="name">Nom de votre projet/application *</label>
+                   <input type="text" id="name" name="name" required placeholder="Mon Bot IA">
+               </div>
+               
+               <div class="form-group">
+                   <label for="email">Adresse email *</label>
+                   <input type="email" id="email" name="email" required placeholder="votre@email.com">
+               </div>
+               
+               <div class="form-group">
+                   <label for="description">Description d'usage</label>
+                   <textarea id="description" name="description" rows="3" placeholder="Comment comptez-vous utiliser notre API ?"></textarea>
+               </div>
+               
+               <div class="form-group">
+                   <label>Choisissez votre plan :</label>
+                   <div class="plan-selector">
+                       <div class="plan-card selected" data-plan="gratuit">
+                           <div class="plan-name">Gratuit</div>
+                           <div class="plan-quota">1 000 appels/jour</div>
+                       </div>
+                       <div class="plan-card" data-plan="starter">
+                           <div class="plan-name">Starter</div>
+                           <div class="plan-quota">20 000 appels/jour<br>0,50€/1000 supplémentaires</div>
+                       </div>
+                   </div>
+               </div>
+               
+               <div class="pricing-info">
+                   <strong>Plan Gratuit :</strong> Parfait pour tester l'API<br>
+                   <strong>Plan Starter :</strong> Facturation automatique via Stripe
+               </div>
+               
+               <button type="submit" class="btn" id="submitBtn">
+                   Obtenir ma clé API
+               </button>
+           </form>
+           
+           <div id="result" class="result">
+               <div id="resultContent"></div>
+           </div>
+       </div>
+   </div>
+
+   <script>
+       // Gestion de la sélection des plans
+       document.querySelectorAll('.plan-card').forEach(card => {
+           card.addEventListener('click', () => {
+               document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+               card.classList.add('selected');
+           });
+       });
+       
+       // Soumission du formulaire
+       document.getElementById('apiKeyForm').addEventListener('submit', async (e) => {
+           e.preventDefault();
+           
+           const submitBtn = document.getElementById('submitBtn');
+           const resultDiv = document.getElementById('result');
+           const resultContent = document.getElementById('resultContent');
+           
+           // Désactiver le bouton
+           submitBtn.disabled = true;
+           submitBtn.textContent = 'Génération en cours...';
+           
+           // Récupérer les données du formulaire
+           const formData = {
+               name: document.getElementById('name').value,
+               email: document.getElementById('email').value,
+               description: document.getElementById('description').value,
+               plan: document.querySelector('.plan-card.selected').dataset.plan
+           };
+           
+           try {
+               // Appel à votre API Worker
+               const response = await fetch('https://glossaire-api-final.neousaxis.workers.dev/api/register', {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json'
+                   },
+                   body: JSON.stringify(formData)
+               });
+               
+               const result = await response.json();
+               
+               if (response.ok) {
+                   // Succès
+                   resultDiv.className = 'result success';
+                   resultContent.innerHTML = `
+                       <h3>Clé API générée avec succès !</h3>
+                       <p><strong>Votre clé API :</strong></p>
+                       <div class="api-key">
+                           ${result.api_key}
+                           <button class="copy-btn" onclick="copyToClipboard('${result.api_key}')">Copier</button>
+                       </div>
+                       <p><strong>Plan :</strong> ${result.plan}</p>
+                       <p><strong>Quota :</strong> ${result.quota}</p>
+                       <hr style="margin: 1rem 0;">
+                       <p><strong>Documentation :</strong></p>
+                       <p>• Endpoint : <code>GET /api/terms</code></p>
+                       <p>• Recherche : <code>GET /api/search?q=terme</code></p>
+                       <p>• Header requis : <code>X-API-Key: ${result.api_key}</code></p>
+                   `;
+                   resultDiv.style.display = 'block';
+                   
+                   // Réinitialiser le formulaire
+                   document.getElementById('apiKeyForm').reset();
+                   document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+                   document.querySelector('.plan-card[data-plan="gratuit"]').classList.add('selected');
+                   
+               } else {
+                   // Erreur
+                   resultDiv.className = 'result error';
+                   resultContent.innerHTML = `
+                       <h3>❌ Erreur</h3>
+                       <p>${result.error || 'Une erreur est survenue'}</p>
+                   `;
+                   resultDiv.style.display = 'block';
+               }
+               
+           } catch (error) {
+               // Erreur réseau
+               resultDiv.className = 'result error';
+               resultContent.innerHTML = `
+                   <h3>❌ Erreur de connexion</h3>
+                   <p>Impossible de contacter le serveur. Réessayez plus tard.</p>
+               `;
+               resultDiv.style.display = 'block';
+           }
+           
+           // Réactiver le bouton
+           submitBtn.disabled = false;
+           submitBtn.textContent = 'Obtenir ma clé API';
+       });
+       
+       // Fonction pour copier dans le presse-papier
+       function copyToClipboard(text) {
+           navigator.clipboard.writeText(text).then(() => {
+               alert('Clé API copiée dans le presse-papier !');
+           });
+       }
+   </script>
+</body>
+</html>

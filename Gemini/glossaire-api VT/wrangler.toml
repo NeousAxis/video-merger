@@ -1,0 +1,15 @@
+name = "glossaire-api-final"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "GLOSSARY_TERMS"
+id = "1155bab917014549985e60328bf96d98"
+
+[[kv_namespaces]]
+binding = "TOKENS_KV"
+id = "934bb8a4d59f462d9f1bb888ace4f894"
+
+[[kv_namespaces]]
+binding = "API_KEYS"
+id = "38f65103fa844e12b99220b3fd9a5ac1"

@@ -1,0 +1,342 @@
+// API Glossaire Simple - Version avec Stripe
+// Pour Cloudflare Workers
+import Stripe from 'stripe';
+
+export default {
+  async fetch(request, env, ctx) {
+    // Configuration CORS
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*', 
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
+    };
+
+    // Gestion OPTIONS pour CORS
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    try {
+      const url = new URL(request.url);
+      const path = url.pathname;
+      const method = request.method;
+
+      // Route publique principale
+      if (path === '/' && method === 'GET') {
+        return new Response(JSON.stringify({
+          message: "API Glossaire - Version avec Stripe",
+          version: "1.3.0",
+          endpoints: [
+            "GET /api/terms - Liste tous les termes (protégé)",
+            "GET /api/search?q=mot - Recherche un terme (protégé)",
+            "POST /api/terms - Ajoute un nouveau terme (protégé)",
+            "PUT /api/terms/:id - Modifie un terme (protégé)",
+            "DELETE /api/terms/:id - Supprime un terme (protégé)",
+            "POST /api/create-payment-intent - Crée une session de paiement Stripe (protégé)"
+          ]
+        }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      // Authentification et limitation de requêtes pour les routes API
+      if (path.startsWith('/api/')) {
+        const authResult = await authenticateRequest(request, env, corsHeaders);
+        if (authResult instanceof Response) {
+          return authResult;
+        }
+
+        const rateLimitResponse = await applyRateLimiting(request, env, authResult, corsHeaders);
+        if (rateLimitResponse) {
+          return rateLimitResponse;
+        }
+      }
+
+      // Route pour créer une intention de paiement Stripe
+      if (path === '/api/create-payment-intent' && method === 'POST') {
+        return await handleCreatePaymentIntent(request, env, corsHeaders);
+      }
+
+      // --- Routes du glossaire ---
+      if (path === '/api/terms' && method === 'GET') {
+        return await getAllTerms(env, corsHeaders);
+      }
+      if (path === '/api/search' && method === 'GET') {
+        const query = url.searchParams.get('q');
+        return await searchTerms(query, env, corsHeaders);
+      }
+      if (path === '/api/terms' && method === 'POST') {
+        return await addTerm(request, env, corsHeaders);
+      }
+      if (path.startsWith('/api/terms/') && method === 'PUT') {
+        const id = path.split('/').pop();
+        return await updateTerm(id, request, env, corsHeaders);
+      }
+      if (path.startsWith('/api/terms/') && method === 'DELETE') {
+        const id = path.split('/').pop();
+        return await deleteTerm(id, env, corsHeaders);
+      }
+
+      // Route non trouvée
+      return new Response(JSON.stringify({ error: "Route non trouvée" }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+
+    } catch (error) {
+      console.error('Erreur dans l\'API:', error);
+      return new Response(JSON.stringify({ error: "Erreur serveur", message: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+};
+
+// 💳 FONCTION: Gérer la création d'une intention de paiement Stripe
+async function handleCreatePaymentIntent(request, env, corsHeaders) {
+    try {
+        const stripe = new Stripe(env.STRIPE_API_KEY);
+        
+        // Pour l'instant, on utilise un montant fixe.
+        // Plus tard, on pourra le récupérer depuis le corps de la requête.
+        const body = await request.json().catch(() => ({})); // Accepte un corps vide
+
+        const amount = body.amount || 1000; // 10.00 EUR par défaut
+        const currency = body.currency || 'eur';
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amount,
+            currency: currency,
+            payment_method_types: ['card'],
+        });
+
+        return new Response(JSON.stringify({
+            clientSecret: paymentIntent.client_secret
+        }), {
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+
+    } catch (error) {
+        console.error("Erreur Stripe:", error);
+        return new Response(JSON.stringify({ error: "Erreur lors de la création du paiement", details: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+    }
+}
+
+
+// 🔒 FONCTION: Authentification par clé API
+async function authenticateRequest(request, env, corsHeaders) {
+  const apiKey = request.headers.get('X-API-Key');
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: "Clé API manquante. Veuillez fournir l'en-tête 'X-API-Key'." }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+  try {
+    const keyDetailsStr = await env.API_KEYS.get(apiKey);
+    if (!keyDetailsStr) {
+      return new Response(JSON.stringify({ error: "Clé API invalide." }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const keyDetails = JSON.parse(keyDetailsStr);
+    if (!keyDetails.active) {
+        return new Response(JSON.stringify({ error: "Clé API inactive." }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+    }
+    return { apiKey, keyDetails };
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "Erreur lors de la validation de la clé API." }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+// ⏱️ FONCTION: Limitation de requêtes
+async function applyRateLimiting(request, env, authResult, corsHeaders) {
+    const { apiKey, keyDetails } = authResult;
+    const { rateLimit } = keyDetails;
+    if (!rateLimit) return null;
+    const currentTime = Math.floor(Date.now() / 1000);
+    const windowStart = keyDetails.rateLimit.timestamp || 0;
+    let count = keyDetails.rateLimit.count || 0;
+    if (currentTime - windowStart > rateLimit.window) {
+        count = 1;
+        keyDetails.rateLimit.timestamp = currentTime;
+    } else {
+        count++;
+    }
+    if (count > rateLimit.limit) {
+        return new Response(JSON.stringify({ error: "Limite de requêtes atteinte. Réessayez plus tard." }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+    }
+    keyDetails.rateLimit.count = count;
+    await env.API_KEYS.put(apiKey, JSON.stringify(keyDetails));
+    return null;
+}
+
+// --- FONCTIONS DU GLOSSAIRE ---
+
+async function getAllTerms(env, corsHeaders) {
+  try {
+    const termsList = await env.GLOSSARY_TERMS.get('terms_index');
+    if (!termsList) {
+      return new Response(JSON.stringify({ terms: [], count: 0, message: "Aucun terme trouvé." }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const termsIds = JSON.parse(termsList);
+    const terms = [];
+    for (const id of termsIds) {
+      const termData = await env.GLOSSARY_TERMS.get(`term_${id}`);
+      if (termData) {
+        terms.push(JSON.parse(termData));
+      }
+    }
+    return new Response(JSON.stringify({ terms: terms, count: terms.length }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Erreur lors de la récupération des termes", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+async function searchTerms(query, env, corsHeaders) {
+  if (!query || query.trim() === '') {
+    return new Response(JSON.stringify({ error: "Paramètre 'q' requis" }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+  try {
+    const termsList = await env.GLOSSARY_TERMS.get('terms_index');
+    if (!termsList) {
+      return new Response(JSON.stringify({ query: query, results: [], count: 0 }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const termsIds = JSON.parse(termsList);
+    const results = [];
+    for (const id of termsIds) {
+      const termData = await env.GLOSSARY_TERMS.get(`term_${id}`);
+      if (termData) {
+        const term = JSON.parse(termData);
+        const searchTerm = query.toLowerCase();
+        if (term.terme.toLowerCase().includes(searchTerm) || term.definition.toLowerCase().includes(searchTerm)) {
+          results.push(term);
+        }
+      }
+    }
+    return new Response(JSON.stringify({ query: query, results: results, count: results.length }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Erreur lors de la recherche", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+async function addTerm(request, env, corsHeaders) {
+  try {
+    const body = await request.json();
+    if (!body.terme || !body.definition) {
+      return new Response(JSON.stringify({ error: "Données manquantes", required: ["terme", "definition"] }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newTerm = {
+      id: id,
+      terme: body.terme.trim(),
+      definition: body.definition.trim(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    await env.GLOSSARY_TERMS.put(`term_${id}`, JSON.stringify(newTerm));
+    const existingIndex = await env.GLOSSARY_TERMS.get('terms_index');
+    const termsIds = existingIndex ? JSON.parse(existingIndex) : [];
+    termsIds.push(id);
+    await env.GLOSSARY_TERMS.put('terms_index', JSON.stringify(termsIds));
+    return new Response(JSON.stringify({ message: "Terme ajouté avec succès", term: newTerm }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Erreur lors de l\'ajout", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+async function updateTerm(id, request, env, corsHeaders) {
+  try {
+    const existingTerm = await env.GLOSSARY_TERMS.get(`term_${id}`);
+    if (!existingTerm) {
+      return new Response(JSON.stringify({ error: "Terme non trouvé" }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    const body = await request.json();
+    const currentTerm = JSON.parse(existingTerm);
+    const updatedTerm = {
+      ...currentTerm,
+      terme: body.terme ? body.terme.trim() : currentTerm.terme,
+      definition: body.definition ? body.definition.trim() : currentTerm.definition,
+      updated_at: new Date().toISOString()
+    };
+    await env.GLOSSARY_TERMS.put(`term_${id}`, JSON.stringify(updatedTerm));
+    return new Response(JSON.stringify({ message: "Terme modifié avec succès", term: updatedTerm }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Erreur lors de la modification", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
+
+async function deleteTerm(id, request, env, corsHeaders) {
+  try {
+    const existingTerm = await env.GLOSSARY_TERMS.get(`term_${id}`);
+    if (!existingTerm) {
+      return new Response(JSON.stringify({ error: "Terme non trouvé" }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    await env.GLOSSARY_TERMS.delete(`term_${id}`);
+    const existingIndex = await env.GLOSSARY_TERMS.get('terms_index');
+    if (existingIndex) {
+      const termsIds = JSON.parse(existingIndex);
+      const filteredIds = termsIds.filter(termId => termId !== id);
+      await env.GLOSSARY_TERMS.put('terms_index', JSON.stringify(filteredIds));
+    }
+    return new Response(JSON.stringify({ message: "Terme supprimé avec succès" }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Erreur lors de la suppression", message: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+}
